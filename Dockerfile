@@ -5,16 +5,14 @@ FROM python:3.9-slim
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 安装系统依赖
+# 安装系统依赖（合并为一个RUN指令）
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
+    curl \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y \
-    curl \          # 调试网络用
-    net-tools \     # 网络工具包
-    && rm -rf /var/lib/apt/lists/*
-    
+
 # 创建工作目录
 WORKDIR /app
 
