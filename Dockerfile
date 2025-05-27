@@ -21,7 +21,7 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 设置权限
-RUN chmod +x /app/missav.py
+RUN chmod +x /app/main.py
 
 # 定义启动命令
-CMD ["python", "missav.py"]
+CMD ["python", "main.py"]
