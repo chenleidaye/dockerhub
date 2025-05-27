@@ -69,10 +69,7 @@ def run_bot():
         }
         
         if proxy:
-            request_config.update({
-                'proxy_url': proxy['proxy_url'],
-                'proxy_auth': proxy['auth']
-            })
+            request_config['proxy_url'] = proxy['proxy_url']
             print(f"🔧 使用代理: {proxy['proxy_url']}")
         
         # 创建带代理配置的Application
@@ -110,15 +107,18 @@ def run_bot():
         print("🤖 Telegram Bot 初始化成功")
         loop.run_until_complete(main_task())
         
-    except Exception as e:
+ except Exception as e:
         error_msg = f"Bot 启动失败: {type(e).__name__}: {str(e)}"
         print(error_msg)
-        log_message(error_msg)
+        # 使用安全的日志记录方式
+        if 'log_message' in globals():
+            log_message(error_msg)
     finally:
         if loop.is_running():
             loop.close()
 # ------------------------------------------------------
-
+async def main():
+    await application.run_polling()
 # ... [保持其他函数不变] ...
 
 if __name__ == "__main__":
