@@ -3,6 +3,8 @@ FROM python:3.9-slim
 
 # 设置时区（中国用户需要）
 ENV TZ=Asia/Shanghai
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONASYNCIODEBUG=1
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 安装系统依赖（合并为一个RUN指令）
