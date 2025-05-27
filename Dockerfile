@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
-COPY interactive.sh /cronctl.sh  ✅ 正确（复制并重命名）
+COPY interactive.sh /cronctl.sh
 
 
 RUN chmod +x cronctl.sh
