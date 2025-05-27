@@ -3,7 +3,6 @@
 touch /app/sync.log
 > /app/sync.log
 
-
 SYNC_CMD="echo '请修改 interactive.sh 里 SYNC_CMD 变量为你想执行的同步命令'"
 
 echo "欢迎进入交互模式！"
@@ -23,11 +22,13 @@ while true; do
     eval $SYNC_CMD
 
   else
-    # 判断是否是cron表达式 + 命令
     if [[ "$input" =~ ^(\*|[0-9,-/]+)\ (\*|[0-9,-/]+)\ (\*|[0-9,-/]+)\ (\*|[0-9,-/]+)\ (\*|[0-9,-/]+)\ (.+)$ ]]; then
       echo "$input" > /tmp/mycron
       crontab /tmp/mycron
-      service cron start
+      
+      # 尝试启动 cron 服务或后台启动 cron
+      service cron start 2>/dev/null || cron &
+
       echo "定时任务设置成功！当前 crontab:"
       crontab -l
     else
