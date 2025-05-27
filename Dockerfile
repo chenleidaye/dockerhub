@@ -1,16 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y bash cron && rm -rf /var/lib/apt/lists/*
+# 安装 cron
+RUN apt-get update && apt-get install -y cron
 
+# 创建工作目录
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 复制文件
+COPY main.py /app/main.py
+COPY cronctl.sh /cronctl.sh
+COPY requirements.txt /app/requirements.txt
 
-COPY main.py .
-COPY interactive.sh /cronctl.sh
+# 权限 & 日志文件
+RUN chmod +x /cronctl.sh && touch /app/sync.log
 
+# 安装依赖
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-RUN chmod +x cronctl.sh
-
-CMD python main.py && /bin/bash
+# 启动交互脚本
+CMD ["/bin/bash", "/cronctl.sh"]
