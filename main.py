@@ -107,10 +107,9 @@ def run_bot():
         print("🤖 Telegram Bot 初始化成功")
         loop.run_until_complete(main_task())
         
- except Exception as e:
+    except Exception as e:  # 第110行
         error_msg = f"Bot 启动失败: {type(e).__name__}: {str(e)}"
         print(error_msg)
-        # 使用安全的日志记录方式
         if 'log_message' in globals():
             log_message(error_msg)
     finally:
