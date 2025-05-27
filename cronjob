@@ -1,6 +1,0 @@
-# /etc/cron.d/cronjob
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-
-# 默认每6小时同步一次（可通过环境变量覆盖）
-* */6 * * * root /usr/local/bin/python /app/main.py >> /var/log/cron.log 2>&1
