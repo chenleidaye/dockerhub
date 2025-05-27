@@ -1,4 +1,5 @@
 #!/bin/bash
+python3 main.py
 set -e
 
 # 每次执行脚本时，将日志写到日志文件
