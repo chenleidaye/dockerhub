@@ -1,13 +1,10 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY app.py ./
-COPY start.sh ./
-COPY requirements.txt ./
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt \
-    && apt update && apt install -y cron \
-    && chmod +x start.sh
+COPY app.py .
 
-CMD ["./start.sh"]
+CMD ["python", "app.py"]
