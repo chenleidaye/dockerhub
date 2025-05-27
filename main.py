@@ -29,13 +29,10 @@ def get_proxy_settings():
     if not parsed.scheme or not parsed.hostname:
         raise ValueError(f"无效代理地址: {proxy_url}")
     
-    auth = None
-    if parsed.username and parsed.password:
-        auth = (parsed.username, parsed.password)
-    
+    # 返回正确的参数格式
     return {
         'proxy_url': proxy_url,
-        'auth': auth
+        # 移除了单独的auth参数，合并到proxy_url中
     }
 # ------------------------------------------------------
 
