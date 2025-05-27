@@ -1,6 +1,9 @@
+import asyncio
+import nest_asyncio  # 新增依赖
+nest_asyncio.apply()  # 必须在文件开头调用
+
 import os
 import requests
-import asyncio
 import threading
 import time
 from bs4 import BeautifulSoup
@@ -18,6 +21,7 @@ BASE_URL = os.getenv("BASE_URL", "https://5721004.xyz")
 SAVE_ROOT = os.getenv("SAVE_ROOT", "strm_files")
 TG_TOKEN = os.getenv("TG_TOKEN")  # 必须设置
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.isdigit()]
+stop_event = threading.Event()  # 放在其他全局变量之后
 
 # 验证配置
 if not TG_TOKEN:
@@ -305,11 +309,9 @@ def main_scan_task():
 def run_bot():
     global bot_app
     try:
-        # 创建新的事件循环
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        # 初始化应用
         application = Application.builder().token(TG_TOKEN).build()
         bot_app = application
 
@@ -324,15 +326,26 @@ def run_bot():
         for handler in cmd_handlers:
             application.add_handler(handler)
 
-        # 正确运行异步协程
+        # 异步任务包装器
+        async def main_task():
+            await application.initialize()
+            await application.start()
+            await application.updater.start_polling()
+            
+            # 保持运行直到收到停止信号
+            while not stop_event.is_set():
+                await asyncio.sleep(1)
+            
+            await application.stop()
+
         print("🤖 Telegram Bot 初始化成功")
-        loop.run_until_complete(application.run_polling())
+        loop.run_until_complete(main_task())
         
     except Exception as e:
-        print(f"Bot 启动失败: {str(e)}")
+        print(f"Bot 启动失败: {type(e).__name__}: {str(e)}")
     finally:
-        # 清理事件循环
-        loop.close()
+        if loop.is_running():
+            loop.close()
 
 # 在文件开头添加异步支持
 async def main():
@@ -341,13 +354,15 @@ async def main():
 # 主程序 -------------------------------------------------------------------
 if __name__ == "__main__":
     # 启动Bot线程
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
     
-    # 保持主线程运行
     try:
+        # 主线程保持运行
         while True:
-            time.sleep(1)
+            time.sleep(3600)
     except KeyboardInterrupt:
-        sync_notify("🔴 服务已手动停止")
-        print("\n服务已关闭")
+        print("\n正在停止服务...")
+        stop_event.set()  # 发送停止信号
+        bot_thread.join(timeout=5)  # 等待线程结束
+        print("服务已安全退出")
