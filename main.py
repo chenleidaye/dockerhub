@@ -15,9 +15,9 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
-from telegram.request import HTTPXRequest  # 新增导入
+from telegram.request import HTTPXRequest
 
-# -------------------- 新增代理配置函数 --------------------
+# -------------------- 代理配置函数 --------------------
 def get_proxy_settings():
     """从环境变量获取代理配置"""
     proxy_url = os.getenv('HTTP_PROXY') or os.getenv('HTTPS_PROXY')
@@ -29,12 +29,8 @@ def get_proxy_settings():
     if not parsed.scheme or not parsed.hostname:
         raise ValueError(f"无效代理地址: {proxy_url}")
     
-    # 返回正确的参数格式
-    return {
-        'proxy_url': proxy_url,
-        # 移除了单独的auth参数，合并到proxy_url中
-    }
-# ------------------------------------------------------
+    return {'proxy_url': proxy_url}
+# -----------------------------------------------------
 
 # 配置参数
 BASE_URL = os.getenv("BASE_URL", "https://5721004.xyz")
@@ -51,10 +47,33 @@ if not ADMIN_IDS:
 
 os.makedirs(SAVE_ROOT, exist_ok=True)
 
-# 全局状态跟踪（保持不变）
-# ... [保持原有AppStatus类不变] ...
+# 全局状态跟踪
+class AppStatus:
+    def __init__(self):
+        self.is_scanning = False
+        self.progress = {"current_dir": "无"}
+        self.last_logs = []
+        self.total_files = 0
+        self.start_time = None
+        self.visited_dirs = set()
 
-# -------------------- 修改Bot初始化部分 --------------------
+app_status = AppStatus()
+bot_app = None
+
+# -------------------- 日志函数 --------------------
+def log_message(message: str):
+    """记录日志并保持最近记录"""
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    full_msg = f"[{timestamp}] {message}"
+    app_status.last_logs.append(full_msg)
+    if len(app_status.last_logs) > 100:
+        app_status.last_logs.pop(0)
+    print(full_msg)
+# ------------------------------------------------
+
+# [保持原有Telegram命令处理函数不变]...
+
+# -------------------- 修复后的Bot初始化 --------------------
 def run_bot():
     global bot_app
     try:
@@ -63,16 +82,13 @@ def run_bot():
         
         # 获取代理配置
         proxy = get_proxy_settings()
-        request_config = {
-            'connect_timeout': 30,
-            'read_timeout': 30
-        }
+        request_config = {'connect_timeout': 30, 'read_timeout': 30}
         
         if proxy:
             request_config['proxy_url'] = proxy['proxy_url']
-            print(f"🔧 使用代理: {proxy['proxy_url']}")
+            log_message(f"🔧 使用代理: {proxy['proxy_url']}")
         
-        # 创建带代理配置的Application
+        # 创建Application实例
         application = Application.builder() \
             .token(TG_TOKEN) \
             .request(HTTPXRequest(**request_config)) \
@@ -80,14 +96,14 @@ def run_bot():
         bot_app = application
 
         # 注册命令处理器
-        cmd_handlers = [
+        handlers = [
             CommandHandler("start", start),
             CommandHandler("scan", trigger_scan),
             CommandHandler("status", show_status),
             CommandHandler("logs", show_logs),
         ]
         
-        for handler in cmd_handlers:
+        for handler in handlers:
             application.add_handler(handler)
 
         # 异步任务包装器
@@ -97,28 +113,24 @@ def run_bot():
                 await application.start()
                 await application.updater.start_polling()
                 
-                # 保持运行直到收到停止信号
                 while not stop_event.is_set():
                     await asyncio.sleep(1)
                 
             finally:
                 await application.stop()
 
-        print("🤖 Telegram Bot 初始化成功")
+        log_message("🤖 Telegram Bot 初始化成功")
         loop.run_until_complete(main_task())
         
-    except Exception as e:  # 第110行
+    except Exception as e:
         error_msg = f"Bot 启动失败: {type(e).__name__}: {str(e)}"
-        print(error_msg)
-        if 'log_message' in globals():
-            log_message(error_msg)
+        log_message(error_msg)
     finally:
         if loop.is_running():
             loop.close()
-# ------------------------------------------------------
-async def main():
-    await application.run_polling()
-# ... [保持其他函数不变] ...
+# -----------------------------------------------------------
+
+# [保持其他功能函数不变]...
 
 if __name__ == "__main__":
     # 启动Bot线程
