@@ -3,6 +3,12 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin, urlparse, parse_qs
 
+proxies = {
+    "http": os.getenv("HTTP_PROXY"),
+    "https": os.getenv("HTTPS_PROXY"),
+}
+
+response = requests.get(url, headers=headers, proxies=proxies)
 BASE_URL = "https://5721004.xyz"
 SAVE_ROOT = "strm_files"  # 根保存目录
 os.makedirs(SAVE_ROOT, exist_ok=True)
