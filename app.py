@@ -1,4 +1,6 @@
 import os
+import threading
+import time
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin, urlparse
@@ -31,7 +33,6 @@ def url_to_local_path(url):
     path_segments = path_segments[idx:]
 
     return os.path.join(SAVE_ROOT, *path_segments)
-
 
 def process_directory(dir_url):
     if dir_url in visited_dirs:
@@ -73,7 +74,7 @@ def process_directory(dir_url):
     if m3u8_files:
         local_dir = url_to_local_path(dir_url)
         os.makedirs(local_dir, exist_ok=True)
-        print(f"\\n📂 进入目录：{dir_url} -> 本地目录：{local_dir}")
+        print(f"\n📂 进入目录：{dir_url} -> 本地目录：{local_dir}")
 
         for strm_filename, m3u8_url in m3u8_files:
             strm_path = os.path.join(local_dir, strm_filename)
@@ -116,7 +117,6 @@ def process_directory(dir_url):
 
     return count
 
-
 def get_root_dirs():
     try:
         response = requests.get(BASE_URL, headers=headers)
@@ -137,8 +137,7 @@ def get_root_dirs():
 
     return root_dirs
 
-
-if __name__ == "__main__":
+def run_sync_once():
     print("🚀 开始扫描网站结构...")
     root_dirs = get_root_dirs()
     total = 0
@@ -147,8 +146,56 @@ if __name__ == "__main__":
         root_dirs = [f"{BASE_URL}/s2/"]
 
     for root_dir in root_dirs:
-        print(f"\\n🔍 处理根目录：{root_dir}")
+        print(f"\n🔍 处理根目录：{root_dir}")
         total += process_directory(root_dir)
 
-    print(f"\\n🎉 全部完成！共生成 {total} 个.strm文件")
+    print(f"\n🎉 同步完成！共生成 {total} 个 .strm 文件")
     print(f"文件根目录：{os.path.abspath(SAVE_ROOT)}")
+
+def periodic_sync(interval_seconds, stop_event):
+    while not stop_event.is_set():
+        run_sync_once()
+        for _ in range(interval_seconds):
+            if stop_event.is_set():
+                break
+            time.sleep(1)
+
+def interactive():
+    stop_event = threading.Event()
+    interval = 6 * 3600  # 默认6小时
+    sync_thread = threading.Thread(target=periodic_sync, args=(interval, stop_event))
+    sync_thread.start()
+
+    print("输入命令: sync (立即同步), settime <秒> (设置间隔秒), exit (退出)")
+
+    while True:
+        try:
+            cmd = input("> ").strip()
+        except EOFError:
+            break
+
+        if cmd == "sync":
+            print("手动触发同步...")
+            run_sync_once()
+        elif cmd.startswith("settime"):
+            parts = cmd.split()
+            if len(parts) == 2 and parts[1].isdigit():
+                interval = int(parts[1])
+                print(f"设置同步间隔为 {interval} 秒")
+                stop_event.set()
+                sync_thread.join()
+                stop_event.clear()
+                sync_thread = threading.Thread(target=periodic_sync, args=(interval, stop_event))
+                sync_thread.start()
+            else:
+                print("用法: settime <秒数>")
+        elif cmd == "exit":
+            print("退出程序")
+            stop_event.set()
+            sync_thread.join()
+            break
+        else:
+            print("未知命令")
+
+if __name__ == "__main__":
+    interactive()
