@@ -1,20 +1,29 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
-# 安装 cron
-RUN apt-get update && apt-get install -y cron
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 创建工作目录
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    cron \
+    gcc \
+    python3-lxml \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
 WORKDIR /app
+COPY . /app
 
-# 复制文件
-COPY main.py /app/main.py
-COPY cronctl.sh /cronctl.sh
+# 安装Python依赖
+RUN pip install --no-cache-dir requests beautifulsoup4 lxml
 
-# 权限 & 日志文件
-RUN chmod +x /cronctl.sh && touch /app/sync.log
+# 设置cron和权限
+RUN touch /var/log/cron.log \
+    && chmod 0644 /etc/cron.d/cronjob \
+    && crontab /etc/cron.d/cronjob
 
-# 安装依赖
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
-# 启动交互脚本
-CMD ["/bin/bash", "/cronctl.sh"]
+# 设置入口点
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
