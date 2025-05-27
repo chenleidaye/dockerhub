@@ -17,8 +17,4 @@ RUN chmod +x /app/run.sh
 RUN mkdir -p /app/log
 
 # 容器启动时执行后台脚本，并用 sleep 定时循环
-CMD ["bash", "-c", "\
-while true; do \
-  /app/run.sh; \
-  sleep 3600; \  # 每小时执行一次，可根据需要调整间隔秒数
-done"]
+CMD ["bash", "-c", "while true; do /app/run.sh; sleep 3600; done"]
