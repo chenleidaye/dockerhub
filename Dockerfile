@@ -1,31 +1,27 @@
+# 使用官方Python基础镜像
 FROM python:3.9-slim
 
-# 设置时区
+# 设置时区（中国用户需要）
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 安装依赖
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
-    cron \
     gcc \
-    python3-lxml \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 先复制cron文件
-COPY cronjob /etc/cron.d/cronjob
-
-# 再设置权限和创建日志文件
-RUN touch /var/log/cron.log && \
-    chmod 0644 /etc/cron.d/cronjob
-
-# 复制其他文件
+# 创建工作目录
 WORKDIR /app
-COPY . /app
+
+# 复制项目文件
+COPY . .
 
 # 安装Python依赖
-RUN pip install --no-cache-dir requests beautifulsoup4 lxml
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 入口点配置
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# 设置权限
+RUN chmod +x /app/missav.py
+
+# 定义启动命令
+CMD ["python", "missav.py"]
