@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  crawler:
+    build: .
+    container_name: nfd_crawler
+    environment:
+      - TG_BOT_TOKEN=你的Telegram机器人Token
+      - TG_CHAT_ID=你的Telegram聊天ID
+    volumes:
+      - ./strm_files:/app/strm_files
+      - ./log:/app/log
+    restart: unless-stopped
