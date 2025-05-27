@@ -1,5 +1,9 @@
 #!/bin/bash
 
+touch /app/sync.log
+> /app/sync.log
+
+
 SYNC_CMD="echo '请修改 interactive.sh 里 SYNC_CMD 变量为你想执行的同步命令'"
 
 echo "欢迎进入交互模式！"
