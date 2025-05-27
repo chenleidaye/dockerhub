@@ -8,7 +8,7 @@ WORKDIR /app
 
 # 复制文件
 COPY main.py /app/main.py
-COPY requirements.txt /app/requirements.txt
+COPY cronctl.sh /cronctl.sh
 
 # 权限 & 日志文件
 RUN chmod +x /cronctl.sh && touch /app/sync.log
