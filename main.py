@@ -305,13 +305,15 @@ def main_scan_task():
 def run_bot():
     global bot_app
     try:
+        # 创建新的事件循环
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
+        # 初始化应用
         application = Application.builder().token(TG_TOKEN).build()
         bot_app = application
-        
-        # 注册命令
+
+        # 注册命令处理器
         cmd_handlers = [
             CommandHandler("start", start),
             CommandHandler("scan", trigger_scan),
@@ -321,12 +323,20 @@ def run_bot():
         
         for handler in cmd_handlers:
             application.add_handler(handler)
-        
-        # 启动轮询
-        print("🤖 Telegram Bot启动成功")
+
+        # 正确运行异步协程
+        print("🤖 Telegram Bot 初始化成功")
         loop.run_until_complete(application.run_polling())
+        
     except Exception as e:
-        print(f"Bot启动失败: {str(e)}")
+        print(f"Bot 启动失败: {str(e)}")
+    finally:
+        # 清理事件循环
+        loop.close()
+
+# 在文件开头添加异步支持
+async def main():
+    await application.run_polling()
 
 # 主程序 -------------------------------------------------------------------
 if __name__ == "__main__":
@@ -337,7 +347,7 @@ if __name__ == "__main__":
     # 保持主线程运行
     try:
         while True:
-            time.sleep(3600)
+            time.sleep(1)
     except KeyboardInterrupt:
-        sync_notify("🔴 服务已停止")
-        print("\n服务终止")
+        sync_notify("🔴 服务已手动停止")
+        print("\n服务已关闭")
