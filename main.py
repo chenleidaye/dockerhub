@@ -1,12 +1,10 @@
 import os
-import threading
-import time
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse, parse_qs
 
 BASE_URL = "https://5721004.xyz"
-SAVE_ROOT = "strm_files"
+SAVE_ROOT = "strm_files"  # 根保存目录
 os.makedirs(SAVE_ROOT, exist_ok=True)
 
 headers = {
@@ -17,13 +15,16 @@ headers = {
 visited_dirs = set()
 
 def url_to_local_path(url):
+    """将URL转换为本地路径，保留 /s2/ 等真实路径部分，包括 ? 参数路径"""
     parsed = urlparse(url)
     path_segments = [seg for seg in unquote(parsed.path).split('/') if seg and seg != '?']
 
+    # 处理 ? 后面的路径片段
     if parsed.query:
         query_segments = [seg for seg in unquote(parsed.query).split('/') if seg]
         path_segments.extend(query_segments)
 
+    # 找第一个季目录关键词（比如 s2, s3, bu, pc 等），从它开始保留路径
     season_keys = {'bu', 's2', 's3', 's4', 's5', 'pc', 'pc2', 'pc3', 'pc4'}
     idx = 0
     for i, seg in enumerate(path_segments):
@@ -33,6 +34,7 @@ def url_to_local_path(url):
     path_segments = path_segments[idx:]
 
     return os.path.join(SAVE_ROOT, *path_segments)
+
 
 def process_directory(dir_url):
     if dir_url in visited_dirs:
@@ -46,9 +48,10 @@ def process_directory(dir_url):
         print(f"🚨 目录访问失败: {e}")
         return 0
 
-    response.encoding = 'utf-8'
+    # 设置编码并解析
+    response.encoding = 'utf-8'  # 强制使用 utf-8 编码
     try:
-        soup = BeautifulSoup(response.text, "lxml")
+        soup = BeautifulSoup(response.text, "lxml")  # 使用 lxml 解析器
     except Exception as e:
         print(f"🚨 解析错误，跳过页面：{dir_url} -> 错误: {e}")
         return 0
@@ -79,13 +82,24 @@ def process_directory(dir_url):
         for strm_filename, m3u8_url in m3u8_files:
             strm_path = os.path.join(local_dir, strm_filename)
             if not os.path.exists(strm_path):
+                # 解析真实播放地址
+                parsed_url = urlparse(m3u8_url)
+                query_dict = parse_qs(parsed_url.query)
+                if 'path' in query_dict:
+                    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+                    real_path = query_dict['path'][0]
+                    real_url = urljoin(base_url + "/", real_path.lstrip('/'))
+                else:
+                    real_url = m3u8_url
+
                 with open(strm_path, "w", encoding="utf-8") as f:
-                    f.write(m3u8_url)
+                    f.write(real_url)
                 print(f"✅ 生成：{strm_filename}")
                 count += 1
 
         print(f"📥 本目录共处理 {count} 个视频")
 
+    # 继续递归处理子目录
     sub_dirs = []
     for li in soup.select('li.mdui-list-item.mdui-ripple'):
         a = li.find('a')
@@ -98,12 +112,15 @@ def process_directory(dir_url):
 
         sub_url = urljoin(dir_url, href)
 
+        # 跳过 sample 目录
         if 'sample' in sub_url.lower():
             continue
 
+        # 排除静态资源、文件，不递归处理
         if any(href.lower().endswith(ext) for ext in ['.m3u8', '.md', '.txt', '.jpg', '.png', '.gif', '.jpeg']):
             continue
 
+        # 只递归处理已知季目录
         if not any(key in sub_url for key in ['bu/', 's2/', 's3/', 's4/', 's5/', 'pc/', 'pc2/', 'pc3/', 'pc4/']):
             continue
 
@@ -116,6 +133,7 @@ def process_directory(dir_url):
         count += process_directory(sub_url)
 
     return count
+
 
 def get_root_dirs():
     try:
@@ -132,12 +150,14 @@ def get_root_dirs():
         href = a.get('href', '')
         if href.startswith('/') and href.endswith('/'):
             full_url = urljoin(BASE_URL, href)
+            # 只保留季目录和panda目录
             if any(key in full_url for key in ['bu/', 's2/', 's3/', 's4/', 's5/', 'pc/', 'pc2/', 'pc3/', 'pc4/']):
                 root_dirs.append(full_url)
 
     return root_dirs
 
-def run_sync_once():
+
+if __name__ == "__main__":
     print("🚀 开始扫描网站结构...")
     root_dirs = get_root_dirs()
     total = 0
@@ -149,53 +169,5 @@ def run_sync_once():
         print(f"\n🔍 处理根目录：{root_dir}")
         total += process_directory(root_dir)
 
-    print(f"\n🎉 同步完成！共生成 {total} 个 .strm 文件")
+    print(f"\n🎉 全部完成！共生成 {total} 个.strm文件")
     print(f"文件根目录：{os.path.abspath(SAVE_ROOT)}")
-
-def periodic_sync(interval_seconds, stop_event):
-    while not stop_event.is_set():
-        run_sync_once()
-        for _ in range(interval_seconds):
-            if stop_event.is_set():
-                break
-            time.sleep(1)
-
-def interactive():
-    stop_event = threading.Event()
-    interval = 6 * 3600  # 默认6小时
-    sync_thread = threading.Thread(target=periodic_sync, args=(interval, stop_event))
-    sync_thread.start()
-
-    print("输入命令: sync (立即同步), settime <秒> (设置间隔秒), exit (退出)")
-
-    while True:
-        try:
-            cmd = input("> ").strip()
-        except EOFError:
-            break
-
-        if cmd == "sync":
-            print("手动触发同步...")
-            run_sync_once()
-        elif cmd.startswith("settime"):
-            parts = cmd.split()
-            if len(parts) == 2 and parts[1].isdigit():
-                interval = int(parts[1])
-                print(f"设置同步间隔为 {interval} 秒")
-                stop_event.set()
-                sync_thread.join()
-                stop_event.clear()
-                sync_thread = threading.Thread(target=periodic_sync, args=(interval, stop_event))
-                sync_thread.start()
-            else:
-                print("用法: settime <秒数>")
-        elif cmd == "exit":
-            print("退出程序")
-            stop_event.set()
-            sync_thread.join()
-            break
-        else:
-            print("未知命令")
-
-if __name__ == "__main__":
-    interactive()
