@@ -1,31 +1,24 @@
-# 使用官方Python基础镜像
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# 设置时区（中国用户需要）
+# 设置时区（可选）
 ENV TZ=Asia/Shanghai
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONASYNCIODEBUG=1
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apt-get update && apt-get install -y cron curl && rm -rf /var/lib/apt/lists/*
 
-# 安装系统依赖（合并为一个RUN指令）
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    curl \
-    net-tools \
-    && rm -rf /var/lib/apt/lists/*
-
-# 创建工作目录
 WORKDIR /app
 
-# 复制项目文件
-COPY . .
-
-# 安装Python依赖
+COPY app/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 设置权限
-RUN chmod +x /app/main.py
+COPY app/ /app/
 
-# 定义启动命令
-CMD ["python", "main.py"]
+RUN chmod +x /app/run.sh
+
+# 创建日志目录
+RUN mkdir -p /app/log
+
+# 容器启动时执行后台脚本，并用 sleep 定时循环
+CMD ["bash", "-c", "\
+while true; do \
+  /app/run.sh; \
+  sleep 3600; \  # 每小时执行一次，可根据需要调整间隔秒数
+done"]
