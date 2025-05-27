@@ -10,7 +10,11 @@ RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y \
+    curl \          # 调试网络用
+    net-tools \     # 网络工具包
+    && rm -rf /var/lib/apt/lists/*
+    
 # 创建工作目录
 WORKDIR /app
 
