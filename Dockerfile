@@ -1,20 +1,19 @@
 FROM python:3.11-slim
 
-# 设置时区（可选）
-ENV TZ=Asia/Shanghai
-RUN apt-get update && apt-get install -y cron curl && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-COPY app/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ /app/
+COPY . .
 
+# 设置代理环境变量（替换成你自己的代理地址）
+ENV HTTP_PROXY="http://your-proxy-host:port"
+ENV HTTPS_PROXY="http://your-proxy-host:port"
+ENV NO_PROXY="localhost,127.0.0.1"
+
+# 给脚本赋执行权限
 RUN chmod +x /app/run.sh
 
-# 创建日志目录
-RUN mkdir -p /app/log
-
-# 容器启动时执行后台脚本，并用 sleep 定时循环
+# 后台无限循环执行脚本，每小时执行一次
 CMD ["bash", "-c", "while true; do /app/run.sh; sleep 3600; done"]
