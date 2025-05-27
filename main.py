@@ -304,21 +304,29 @@ def main_scan_task():
 # Bot初始化 ----------------------------------------------------------------
 def run_bot():
     global bot_app
-    application = Application.builder().token(TG_TOKEN).build()
-    bot_app = application
-    
-    # 注册命令
-    cmd_handlers = [
-        CommandHandler("start", start),
-        CommandHandler("scan", trigger_scan),
-        CommandHandler("status", show_status),
-        CommandHandler("logs", show_logs),
-    ]
-    
-    for handler in cmd_handlers:
-        application.add_handler(handler)
-    
-    application.run_polling()
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        application = Application.builder().token(TG_TOKEN).build()
+        bot_app = application
+        
+        # 注册命令
+        cmd_handlers = [
+            CommandHandler("start", start),
+            CommandHandler("scan", trigger_scan),
+            CommandHandler("status", show_status),
+            CommandHandler("logs", show_logs),
+        ]
+        
+        for handler in cmd_handlers:
+            application.add_handler(handler)
+        
+        # 启动轮询
+        print("🤖 Telegram Bot启动成功")
+        loop.run_until_complete(application.run_polling())
+    except Exception as e:
+        print(f"Bot启动失败: {str(e)}")
 
 # 主程序 -------------------------------------------------------------------
 if __name__ == "__main__":
