@@ -8,7 +8,6 @@ WORKDIR /app
 
 # 复制文件
 COPY main.py /app/main.py
-COPY cronctl.sh /cronctl.sh
 COPY requirements.txt /app/requirements.txt
 
 # 权限 & 日志文件
