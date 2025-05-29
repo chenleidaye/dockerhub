@@ -6,6 +6,12 @@ WORKDIR /app
 
 # 复制依赖文件（如果有单独的 requirements.txt）
 # COPY requirements.txt .
+ COPY config.json .
+ 
+# 安装依赖前校验配置（可选，避免无效镜像）
+RUN python -c "import json, os; \
+    if not os.path.exists('config.json'): raise FileNotFoundError('config.json 缺失'); \
+    with open('config.json', 'r') as f: json.load(f);"
 
 # 安装依赖（直接在 Dockerfile 中指定，避免额外文件）
 RUN pip install --no-cache-dir \
