@@ -1,16 +1,15 @@
 {
   "BOT_TOKEN": "你的Telegram Bot Token",
   "CHAT_ID": "你的Telegram聊天ID",
-  "COOKIE_FILE": "/app/data/wechat_cookie.txt",  #/* 必须与Docker Volume路径一致 */
-  "QR_IMAGE_PATH": "/app/data/wechat_qrcode.png", #/* 必须与Docker Volume路径一致 */
-  "overwrite": true,                             # True=覆盖模式，False=追加模式
-  "check_interval": 60,                          # 检查间隔（秒）
-  "telegram_proxy": None,                        # Telegram代理，例如 "http://127.0.0.1:10808"
-  "wechat_urls": [                               #/* 非空列表 */
+  "COOKIE_FILE": "/app/data/wechat_cookie.txt"， 
+  "QR_IMAGE_PATH": "/app/data/wechat_qrcode.png"，
+  "overwrite": true，                             
+  "check_interval": 60，                         
+  "telegram_proxy": None,                       
+  "wechat_urls": [                              
     "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/xxx"
   ],
-  "ip_urls": [                                   #/* 非空列表 */
-    "https://myip.ipip.net",
+  "ip_urls": [                                  
     "https://ddns.oray.com/checkip",
     "https://ip.3322.net",
     "https://4.ipw.cn" 
