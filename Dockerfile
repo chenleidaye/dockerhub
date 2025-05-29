@@ -2,35 +2,35 @@ FROM python:3.9-slim-buster
 
 WORKDIR /app
 
-# 安装系统依赖
+# 安装依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     unzip \
     gnupg2 \
     ca-certificates \
     fonts-liberation \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
-# 添加 Google Chrome 签名密钥和源（不再使用 apt-key）
+# 添加 Chrome 签名与源
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 
-# 安装最新版 Chrome（不指定版本）
+# 安装 Chrome 浏览器
 RUN apt-get update && apt-get install -y --no-install-recommends \
     google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/* \
-    && chmod +x /usr/bin/google-chrome
+    && rm -rf /var/lib/apt/lists/*
 
-# 安装匹配的 ChromeDriver（自动检测版本）
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') \
-    && CHROMEDRIVER_VERSION=$(wget -qO- https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | \
-        grep -A 20 "\"version\": \"${CHROME_VERSION}\"" | grep "linux64" | grep "chromedriver" | head -n1 | cut -d '"' -f 4) \
-    && wget -q "${CHROMEDRIVER_VERSION}" -O chromedriver.zip \
+# 安装匹配的 ChromeDriver（使用 jq 获取官方推荐版本）
+RUN CHROME_VERSION=$(google-chrome-stable --version | grep -oP '\d+\.\d+\.\d+\.\d+') \
+    && DOWNLOAD_URL=$(wget -qO- https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json \
+        | jq -r --arg version "$CHROME_VERSION" '.channels.Stable.downloads.chromedriver[] | select(.platform == "linux64") | .url') \
+    && wget -q "$DOWNLOAD_URL" -O chromedriver.zip \
     && unzip chromedriver.zip -d /usr/local/bin/ \
     && rm chromedriver.zip \
     && chmod +x /usr/local/bin/chromedriver
 
-# 安装 Python 依赖
+# Python 依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
