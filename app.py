@@ -9,50 +9,31 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # ==================== 配置区域 ====================
-CONFIG_FILE = "config.json"
+BOT_TOKEN = os.getenv("BOT_TOKEN", "BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID", "CHAT_ID")
+COOKIE_FILE = "wechat_cookie.txt"  # Cookie保存文件
+QR_IMAGE_PATH = 'wechat_qrcode.png'  # 二维码保存路径
 
-def load_config():
-    if not os.path.exists(CONFIG_FILE):
-        raise FileNotFoundError(f"配置文件 {CONFIG_FILE} 未找到，请确保存在并包含所有必填字段")
-    with open(CONFIG_FILE, "r") as f:
-        config = json.load(f)
-    
-    # 验证必填字段
-    required_fields = [
-        "BOT_TOKEN", "CHAT_ID", "COOKIE_FILE", "QR_IMAGE_PATH",
-        "overwrite", "check_interval", "telegram_proxy",
-        "wechat_urls", "ip_urls"
-    ]
-    for field in required_fields:
-        if field not in config:
-            raise KeyError(f"配置文件缺少必填字段：{field}")
-    
-    # 类型校验（可选，但推荐）
-    if not isinstance(config["overwrite"], bool):
-        raise TypeError("overwrite 必须为布尔值")
-    if not isinstance(config["check_interval"], int) or config["check_interval"] < 1:
-        raise ValueError("check_interval 必须为正整数")
-    if not isinstance(config["wechat_urls"], list) or not config["wechat_urls"]:
-        raise ValueError("wechat_urls 必须为非空列表")
-    if not isinstance(config["ip_urls"], list) or not config["ip_urls"]:
-        raise ValueError("ip_urls 必须为非空列表")
-    
-    return config
-
-config = load_config()
-
-# 直接使用配置值，不提供默认参数
-BOT_TOKEN = config["BOT_TOKEN"]
-CHAT_ID = config["CHAT_ID"]
-COOKIE_FILE = config["COOKIE_FILE"]
-QR_IMAGE_PATH = config["QR_IMAGE_PATH"]
-overwrite = config["overwrite"]
-check_interval = config["check_interval"]
-telegram_proxy = config["telegram_proxy"]
-wechat_urls = config["wechat_urls"]
-ip_urls = config["ip_urls"]
+ip_urls = [
+    "https://myip.ipip.net",
+    "https://ddns.oray.com/checkip",
+    "https://ip.3322.net",
+    "https://4.ipw.cn"
+]
 ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+
+# 基础URL，后面拼接应用ID
+BASE_APP_URL = "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/"
+
+# 从环境变量获取应用ID列表，以逗号分隔
+app_ids = os.getenv("APP_IDS", "123456789,23456789").split(",")
+wechat_urls = [BASE_APP_URL + app_id.strip() for app_id in app_ids]
+
+overwrite = os.getenv("OVERWRITE", "true").lower() == "true"  # True=覆盖模式，False=追加模式
+check_interval = int(os.getenv("CHECK_INTERVAL", "60"))  # 检查间隔（秒）
 current_ip_address = "0.0.0.0"  # 当前IP地址
+
+telegram_proxy = os.getenv("TELEGRAM_PROXY", None)  # Telegram代理，例如 "http://127.0.0.1:10808"
 # =================================================
 
 def load_cookie():
@@ -207,48 +188,38 @@ def capture_wechat_qrcode(driver):
         return False
 
 def handle_login(driver):
-    """处理登录流程并保存新Cookie，支持二维码失效重试"""
-    max_retries = 3  # 最多重试3次二维码
-    attempt = 0
-
-    while True:
-        attempt += 1
-        print(f"[*] 正在进行第 {attempt} 次二维码登录尝试...")
-        
+    """处理登录流程并保存新Cookie"""
+    try:
         # 获取并发送二维码
         if not capture_wechat_qrcode(driver):
-            continue  # 获取二维码失败，尝试下一轮
-
-        try:
-            # 等待扫码登录
-            print("[*] 等待扫码登录...")
-            WebDriverWait(driver, 300).until(
-                EC.url_contains("wework_admin/frame")
-            )
-            print("[√] 登录成功")
-            
-            # 保存新Cookie
-            cookies = driver.get_cookies()
-            cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-            save_cookie(cookie_str)
-            print(f"[√] Cookie已保存到 {COOKIE_FILE}")
-
-            send_telegram_message("企业微信登录成功！Cookie已保存，后续将自动使用保存的Cookie", "success")
-            return driver
-
-        except TimeoutException:
-            print("[X] 登录超时，二维码已过期")
-            send_telegram_message("登录超时，二维码已过期，正在尝试重新生成二维码", "warning")
-            continue  # 再尝试一次新的二维码
-
-        except Exception as e:
-            print(f"[X] 登录处理失败: {e}")
-            send_telegram_message(f"登录处理失败: {str(e)}", "error")
             return None
-
-    send_telegram_message("连续多次扫码失败，请检查网络或手动扫码登录", "error")
-    return None
-
+        
+        # 等待登录成功
+        print("[*] 等待扫码登录...")
+        WebDriverWait(driver, 300).until(
+            EC.url_contains("wework_admin/frame")
+        )
+        print("[√] 登录成功")
+        
+        # 保存新Cookie
+        cookies = driver.get_cookies()
+        cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+        save_cookie(cookie_str)
+        print(f"[√] Cookie已保存到 {COOKIE_FILE}")
+        
+        # 发送登录成功通知
+        send_telegram_message("企业微信登录成功！Cookie已保存，后续将自动使用保存的Cookie", "success")
+        
+        return driver
+        
+    except TimeoutException:
+        print("[X] 登录超时，二维码已过期")
+        send_telegram_message("登录超时，二维码已过期，请重新启动程序获取新二维码", "error")
+        return None
+    except Exception as e:
+        print(f"[X] 登录处理失败: {e}")
+        send_telegram_message(f"登录处理失败: {str(e)}", "error")
+        return None
 
 def init_driver():
     """初始化浏览器并处理登录状态"""
@@ -258,11 +229,10 @@ def init_driver():
     options.add_argument('--no-sandbox')
     options.add_argument('--window-size=1920,1080')
     options.add_argument('--incognito')  # 无痕浏览
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--headless=new')  # Chrome 117+推荐用 --headless=new
 
-    driver = webdriver.Chrome(options=options)
+    # 设置Chrome驱动路径
+    chrome_driver_path = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedriver")
+    driver = webdriver.Chrome(options=options, executable_path=chrome_driver_path)
     
     # 尝试使用保存的Cookie
     cookie_str = load_cookie()
@@ -329,7 +299,8 @@ def update_all_apps_ip(driver, new_ip):
     details = []
     
     for i, url in enumerate(wechat_urls, 1):
-        print(f"[*] 正在更新应用 {i}/{total}: {url}")
+        app_id = url.split("/")[-1]
+        print(f"[*] 正在更新应用 {i}/{total} (ID: {app_id}): {url}")
         driver.get(url)
         time.sleep(2)
         success, message = update_ip(driver, new_ip)
@@ -338,9 +309,9 @@ def update_all_apps_ip(driver, new_ip):
         
         if success:
             success_count += 1
-            print(f"[√] 应用 {i} 更新成功")
+            print(f"[√] 应用 {i} (ID: {app_id}) 更新成功")
         else:
-            print(f"[X] 应用 {i} 更新失败: {message}")
+            print(f"[X] 应用 {i} (ID: {app_id}) 更新失败: {message}")
     
     # 创建美观的更新报告
     report = (
@@ -371,6 +342,7 @@ def main_loop():
     print("====== 企业微信可信IP自动更新程序 ======")
     print(f"检查间隔: {check_interval//60} 分钟")
     print(f"覆盖模式: {'开启' if overwrite else '追加'}")
+    print(f"监控应用数: {len(wechat_urls)}")
     print("="*50)
     
     # 发送启动通知
@@ -443,4 +415,4 @@ if __name__ == '__main__':
         main_loop()
     except Exception as e:
         print(f"[X] 程序崩溃: {e}")
-        send_telegram_message(f"程序发生崩溃:\n```\n{str(e)}\n```\n请检查系统状态", "error")
+        send_telegram_message(f"程序发生崩溃:\n```\n{str(e)}\n```\n请检查系统状态", "error")    
