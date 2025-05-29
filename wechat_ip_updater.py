@@ -334,7 +334,11 @@ def update_all_apps_ip(driver, new_ip):
     
     return success_count
 
+LOG_FILE = os.path.join("/app/logs", "wechat_ip_updater.log")
+
 def main_loop():
+    with open(LOG_FILE, "a") as f:
+        f.write("[INFO] 程序启动\n")  
     """主循环逻辑"""
     global current_ip_address
     
