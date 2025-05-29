@@ -227,9 +227,17 @@ def init_driver():
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
+    options.add_argument('--no-sandbox')  # 禁用沙箱
     options.add_argument('--window-size=1920,1080')
-    options.add_argument('--incognito')  # 无痕浏览
+    options.add_argument('--incognito')
+    options.add_argument('--disable-dev-shm-usage')  # 关键：禁用 /dev/shm 共享内存
+    options.add_argument('--disable-accelerated-2d-canvas')
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--memory-pressure-off')  # 关闭内存压力管理
+    
+    # 设置较低的内存限制（根据容器资源调整）
+    options.add_argument('--disable-features=VizDisplayCompositor')
+    options.add_argument('--disable-features=IsolateOrigins,site-per-process')
 
     chrome_driver_path = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedriver")
     service = Service(chrome_driver_path)  # 创建 Service 对象
