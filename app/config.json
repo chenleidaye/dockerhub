@@ -1,0 +1,19 @@
+{
+  "BOT_TOKEN": "7970091013:AAFQAkzIXioVlh0bqNxBFD_DSRvZ27INa90",
+  "CHAT_ID": "5113786725",
+  "COOKIE_FILE": "wechat_cookie.txt",
+  "QR_IMAGE_PATH": "wechat_qrcode.png",
+  "overwrite": true,
+  "check_interval": 60,
+  "telegram_proxy": null,
+  "wechat_urls": [
+    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629501408695718",
+    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629502137706854"
+  ],
+  "ip_urls": [
+    "https://myip.ipip.net",
+    "https://ddns.oray.com/checkip",
+    "https://ip.3322.net",
+    "https://4.ipw.cn"
+  ]
+}
