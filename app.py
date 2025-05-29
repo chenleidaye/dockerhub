@@ -52,7 +52,7 @@ telegram_proxy = config["telegram_proxy"]
 wechat_urls = config["wechat_urls"]
 ip_urls = config["ip_urls"]
 ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
-
+current_ip_address = "0.0.0.0"  # 当前IP地址
 # =================================================
 
 def load_cookie():
