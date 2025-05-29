@@ -1,61 +1,66 @@
-# 使用官方python基础镜像
+# 使用官方Python基础镜像，带slim，节省空间
 FROM python:3.11-slim
 
-# 安装必要工具和Chrome浏览器
+# 安装Chrome及依赖
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     curl \
-    gnupg \
     fonts-liberation \
+    libnss3 \
+    libx11-6 \
     libx11-xcb1 \
     libxcomposite1 \
     libxcursor1 \
     libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
     libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
     libasound2 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
     libcups2 \
+    libdbus-1-3 \
     libdrm2 \
     libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
-    libxss1 \
-    libnss3 \
     libxshmfence1 \
     xdg-utils \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# 安装 Chrome 浏览器（Google Chrome Stable）
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update && apt-get install -y google-chrome-stable
+# 下载并安装Chrome
+RUN wget -q -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    dpkg -i /tmp/google-chrome.deb || apt-get -f install -y && \
+    rm /tmp/google-chrome.deb
 
-# 下载对应版本的chromedriver（这里以114版本为例，你要根据本地Chrome版本替换）
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
-    DRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION") && \
-    wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip" && \
-    unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
-    rm /tmp/chromedriver.zip && \
+# 安装ChromeDriver
+ARG CHROMEDRIVER_VERSION=116.0.5845.96
+RUN wget -q -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip && \
+    unzip /tmp/chromedriver_linux64.zip -d /usr/local/bin/ && \
+    rm /tmp/chromedriver_linux64.zip && \
     chmod +x /usr/local/bin/chromedriver
 
-# 安装Python依赖
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# 设置环境变量，避免字体缺失警告
+ENV LANG=C.UTF-8
 
-# 复制脚本
-COPY . /app
+# 复制依赖文件并安装
 WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 创建挂载点目录，用于存放cookie和二维码图片
-VOLUME ["/app/data"]
+# 复制脚本文件
+COPY app.py .
 
-# 环境变量（可根据需要覆盖）
-ENV BOT_TOKEN=""
-ENV CHAT_ID=""
-ENV CHECK_INTERVAL=1800
-ENV OVERWRITE=True
+# 允许容器访问X服务器（无头模式一般不需要）
+# 设置Chrome无头参数由代码内指定
 
-# 启动脚本
-CMD ["python", "main.py"]
+# 入口运行程序
+CMD ["python", "app.py"]
