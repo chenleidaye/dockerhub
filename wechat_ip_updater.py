@@ -90,14 +90,14 @@ formatted_text = (
     f"══════════════════════════\n"
     f"_🕒 {now}_"
 )
-    
-    payload = {
-        "chat_id": CHAT_ID, 
-        "text": formatted_text, 
-        "parse_mode": "Markdown"
-    }
-    
-    try:
+
+payload = {
+    "chat_id": CHAT_ID, 
+    "text": formatted_text, 
+    "parse_mode": "Markdown"
+}
+
+try:
         response = requests.post(url, json=payload, proxies=proxies, timeout=10)
         return response.status_code == 200
     except Exception as e:
