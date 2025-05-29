@@ -224,7 +224,6 @@ def handle_login(driver):
 from selenium.webdriver.chrome.service import Service  # 新增导入
 
 def init_driver():
-    """初始化浏览器并处理登录状态"""
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
@@ -232,14 +231,13 @@ def init_driver():
     options.add_argument('--window-size=1920,1080')
     options.add_argument('--incognito')  # 无痕浏览
 
-    # 设置Chrome驱动路径（使用Service类）
     chrome_driver_path = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedriver")
-    service = Service(chrome_driver_path)  # 创建Service对象
+    service = Service(chrome_driver_path)  # 创建 Service 对象
     
-    # 使用Service对象初始化WebDriver（移除executable_path参数）
+    # 关键：通过 service 参数传递驱动路径，无 executable_path
     driver = webdriver.Chrome(service=service, options=options)
     
-    # 尝试使用保存的Cookie
+    # 加载 Cookie 逻辑不变...
     cookie_str = load_cookie()
     if cookie_str:
         driver.get("https://work.weixin.qq.com/")
@@ -249,12 +247,11 @@ def init_driver():
             name, value = cookie.split('=', 1)
             driver.add_cookie({"name": name, "value": value})
     
-    # 验证登录状态
+    # 验证登录状态不变...
     driver.get(wechat_urls[0])
     time.sleep(3)
     
     try:
-        # 检查登录元素
         driver.find_element(By.CLASS_NAME, 'login_stage_title_text')
         print("[!] Cookie已失效，需要重新登录")
         send_telegram_message("保存的Cookie已失效，需要重新登录企业微信", "warning")
