@@ -14,6 +14,13 @@ CHAT_ID = os.getenv("CHAT_ID", "CHAT_ID")
 COOKIE_FILE = "wechat_cookie.txt"  # Cookie保存文件
 QR_IMAGE_PATH = 'wechat_qrcode.png'  # 二维码保存路径
 
+# 新增：应用ID变量（可配置多个，用逗号分隔）
+APP_IDS = os.getenv("APP_IDS", "123456789,23456789").split(',')
+BASE_URL = "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/"
+
+# 自动生成完整URL列表
+wechat_urls = [BASE_URL + app_id.strip() for app_id in APP_IDS if app_id.strip()]
+
 ip_urls = [
     "https://myip.ipip.net",
     "https://ddns.oray.com/checkip",
@@ -22,18 +29,10 @@ ip_urls = [
 ]
 ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
 
-# 基础URL，后面拼接应用ID
-BASE_APP_URL = "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/"
-
-# 从环境变量获取应用ID列表，以逗号分隔
-app_ids = os.getenv("APP_IDS", "123456789,23456789").split(",")
-wechat_urls = [BASE_APP_URL + app_id.strip() for app_id in app_ids]
-
-overwrite = os.getenv("OVERWRITE", "true").lower() == "true"  # True=覆盖模式，False=追加模式
-check_interval = int(os.getenv("CHECK_INTERVAL", "60"))  # 检查间隔（秒）
-current_ip_address = "0.0.0.0"  # 当前IP地址
-
-telegram_proxy = os.getenv("TELEGRAM_PROXY", None)  # Telegram代理，例如 "http://127.0.0.1:10808"
+overwrite = os.getenv("OVERWRITE", "true").lower() == "true"
+check_interval = int(os.getenv("CHECK_INTERVAL", "60"))
+current_ip_address = "0.0.0.0"
+telegram_proxy = os.getenv("TELEGRAM_PROXY", None)
 # =================================================
 
 def load_cookie():
