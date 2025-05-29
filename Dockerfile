@@ -2,8 +2,9 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # 先复制所有必要文件
-COPY config.json .
 COPY app.py .  # 提前复制 app.py，确保后续步骤能找到
+COPY config.json .
+
 
 # 安装依赖前校验配置
 RUN python -c "import json, os; \
