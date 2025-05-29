@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
     python-dotenv==1.0.0
 
 # 复制 Python 脚本到容器
-COPY wechat_ip_auto_update.py .
+COPY app.py .
 
 # 配置环境变量（建议通过环境变量传递敏感信息）
 ENV BOT_TOKEN="your_telegram_bot_token" \
@@ -43,4 +43,4 @@ ENV CHROME_BIN=/usr/bin/chromium-browser
 # EXPOSE 8080
 
 # 启动程序
-CMD ["python", "wechat_ip_auto_update.py"]
+CMD ["python", "app.py"]
