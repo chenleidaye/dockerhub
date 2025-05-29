@@ -1,11 +1,11 @@
 {
   "BOT_TOKEN": "你的Telegram Bot Token",
-  "CHAT_ID": "你的Telegram聊天ID",
+  "CHAT_ID": "你的Telegram聊天ID"
   "COOKIE_FILE": "/app/data/wechat_cookie.txt"
   "QR_IMAGE_PATH": "/app/data/wechat_qrcode.png"
-  "overwrite": true
-  "check_interval": 60
-  "telegram_proxy":             
+  "overwrite": "true"
+  "check_interval": "60"
+  "telegram_proxy": "http://172.17.0.1:7890"
   "wechat_urls": [                              
     "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/xxx"
   ],
