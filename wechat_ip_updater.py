@@ -56,7 +56,8 @@ def send_telegram_message(text, notification_type="info"):
     """发送美观的Telegram通知"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     proxies = {"http": telegram_proxy, "https": telegram_proxy} if telegram_proxy else None
-
+    
+    # 根据通知类型设置表情符号
     emojis = {
         "success": "✅",
         "error": "❌",
@@ -66,7 +67,8 @@ def send_telegram_message(text, notification_type="info"):
         "ip": "🌐",
         "qr": "📲"
     }
-
+    
+    # 创建美观的Markdown消息头部
     header = {
         "success": f"{emojis['success']} *操作成功* {emojis['success']}",
         "error": f"{emojis['error']} *发生错误* {emojis['error']}",
@@ -100,8 +102,7 @@ def send_telegram_message(text, notification_type="info"):
     except Exception as e:
         print(f"[X] Telegram消息发送失败: {e}")
         return False
-
-
+        
 def send_telegram_image(image_path, caption=""):
     """发送图片到Telegram"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
