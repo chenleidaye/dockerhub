@@ -9,29 +9,50 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # ==================== 配置区域 ====================
-BOT_TOKEN = "7970091013:AAFQAkzIXioVlh0bqNxBFD_DSRvZ27INa90"
-CHAT_ID = "5113786725"
-COOKIE_FILE = "wechat_cookie.txt"  # Cookie保存文件
-QR_IMAGE_PATH = 'wechat_qrcode.png'  # 二维码保存路径
+CONFIG_FILE = "config.json"
 
-ip_urls = [
-    "https://myip.ipip.net",
-    "https://ddns.oray.com/checkip",
-    "https://ip.3322.net",
-    "https://4.ipw.cn"
-]
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        raise FileNotFoundError(f"配置文件 {CONFIG_FILE} 未找到，请确保存在并包含所有必填字段")
+    with open(CONFIG_FILE, "r") as f:
+        config = json.load(f)
+    
+    # 验证必填字段
+    required_fields = [
+        "BOT_TOKEN", "CHAT_ID", "COOKIE_FILE", "QR_IMAGE_PATH",
+        "overwrite", "check_interval", "telegram_proxy",
+        "wechat_urls", "ip_urls"
+    ]
+    for field in required_fields:
+        if field not in config:
+            raise KeyError(f"配置文件缺少必填字段：{field}")
+    
+    # 类型校验（可选，但推荐）
+    if not isinstance(config["overwrite"], bool):
+        raise TypeError("overwrite 必须为布尔值")
+    if not isinstance(config["check_interval"], int) or config["check_interval"] < 1:
+        raise ValueError("check_interval 必须为正整数")
+    if not isinstance(config["wechat_urls"], list) or not config["wechat_urls"]:
+        raise ValueError("wechat_urls 必须为非空列表")
+    if not isinstance(config["ip_urls"], list) or not config["ip_urls"]:
+        raise ValueError("ip_urls 必须为非空列表")
+    
+    return config
+
+config = load_config()
+
+# 直接使用配置值，不提供默认参数
+BOT_TOKEN = config["BOT_TOKEN"]
+CHAT_ID = config["CHAT_ID"]
+COOKIE_FILE = config["COOKIE_FILE"]
+QR_IMAGE_PATH = config["QR_IMAGE_PATH"]
+overwrite = config["overwrite"]
+check_interval = config["check_interval"]
+telegram_proxy = config["telegram_proxy"]
+wechat_urls = config["wechat_urls"]
+ip_urls = config["ip_urls"]
 ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
 
-wechat_urls = [
-    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629501408695718",
-    "https://work.weixin.qq.com/wework_admin/frame#apps/modApiApp/5629502137706854",
-]
-
-overwrite = True  # True=覆盖模式，False=追加模式
-check_interval = 60  # 检查间隔（秒）
-current_ip_address = "0.0.0.0"  # 当前IP地址
-
-telegram_proxy = None  # Telegram代理，例如 "http://127.0.0.1:10808"
 # =================================================
 
 def load_cookie():
