@@ -414,7 +414,6 @@ def main_loop():
             time.sleep(60)
 
 if __name__ == '__main__':
-    print("[INFO] 程序启动")
     try:
         main_loop()
     except Exception as e:
