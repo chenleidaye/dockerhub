@@ -9,8 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # ==================== 配置区域 ====================
-BOT_TOKEN = "7970091013:AAFQAkzIXioVlh0bqNxBFD_DSRvZ27INa90"
-CHAT_ID = "5113786725"
+BOT_TOKEN = ""
+CHAT_ID = ""
 COOKIE_FILE = "wechat_cookie.txt"  # Cookie保存文件
 QR_IMAGE_PATH = 'wechat_qrcode.png'  # 二维码保存路径
 
