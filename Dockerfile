@@ -11,12 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Chrome 浏览器（指定稳定版本，避免动态解析）
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    google-chrome-stable=114.0.5735.91-1 \
-    && rm -rf /var/lib/apt/lists/* \
-    && chmod +x /usr/bin/google-chrome-stable
+RUN apt-get update && apt-get install -y wget gnupg ca-certificates \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # 安装 ChromeDriver（使用国内镜像源，如阿里云）
 RUN CHROME_VERSION=114.0.5735.91 \
