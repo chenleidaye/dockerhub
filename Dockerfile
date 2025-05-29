@@ -2,6 +2,7 @@ FROM python:3.9-slim-buster
 
 WORKDIR /app
 RUN mkdir -p /app/logs  # 创建日志目录
+
 # 安装依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
@@ -43,5 +44,6 @@ ENV CHAT_ID=your_chat_id
 ENV CHECK_INTERVAL=300
 ENV OVERWRITE=true
 ENV TELEGRAM_PROXY=
+ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "wechat_ip_updater.py"]
