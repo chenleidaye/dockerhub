@@ -221,6 +221,8 @@ def handle_login(driver):
         send_telegram_message(f"登录处理失败: {str(e)}", "error")
         return None
 
+from selenium.webdriver.chrome.service import Service  # 新增导入
+
 def init_driver():
     """初始化浏览器并处理登录状态"""
     options = webdriver.ChromeOptions()
@@ -230,14 +232,13 @@ def init_driver():
     options.add_argument('--window-size=1920,1080')
     options.add_argument('--incognito')  # 无痕浏览
 
-    # 设置Chrome驱动路径
+    # 设置Chrome驱动路径（使用Service类）
     chrome_driver_path = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedriver")
-    driver = webdriver.Chrome(options=options, executable_path=chrome_driver_path)
     service = Service(chrome_driver_path)  # 创建Service对象
     
-    # 使用Service对象初始化WebDriver
+    # 使用Service对象初始化WebDriver（移除executable_path参数）
     driver = webdriver.Chrome(service=service, options=options)
-
+    
     # 尝试使用保存的Cookie
     cookie_str = load_cookie()
     if cookie_str:
