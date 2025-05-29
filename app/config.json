@@ -1,14 +1,14 @@
 {
-  "BOT_TOKEN": "7970091013:AAFQAkzIXioVlh0bqNxBFD_DSRvZ27INa90",
-  "CHAT_ID": "5113786725",
-  "COOKIE_FILE": "wechat_cookie.txt",
+  "BOT_TOKEN": "bot-tken"，      #改为自己机器人TOKEN
+  "CHAT_ID": "you-id",           #改为自己tg账号
+  "COOKIE_FILE": "wechat_cookie.txt"， 
   "QR_IMAGE_PATH": "wechat_qrcode.png",
   "overwrite": true,
   "check_interval": 60,
   "telegram_proxy": null,
   "wechat_urls": [
-    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629501408695718",
-    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629502137706854"
+    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/(you_id)",
+    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/(you_id)"
   ],
   "ip_urls": [
     "https://myip.ipip.net",
