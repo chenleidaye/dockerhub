@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
 
 # ==================== 配置区域 ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "BOT_TOKEN")
@@ -232,7 +233,11 @@ def init_driver():
     # 设置Chrome驱动路径
     chrome_driver_path = os.getenv("CHROME_DRIVER_PATH", "/usr/local/bin/chromedriver")
     driver = webdriver.Chrome(options=options, executable_path=chrome_driver_path)
+    service = Service(chrome_driver_path)  # 创建Service对象
     
+    # 使用Service对象初始化WebDriver
+    driver = webdriver.Chrome(service=service, options=options)
+
     # 尝试使用保存的Cookie
     cookie_str = load_cookie()
     if cookie_str:
