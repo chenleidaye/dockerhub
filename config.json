@@ -1,0 +1,18 @@
+{
+  "BOT_TOKEN": "你的Telegram Bot Token",
+  "CHAT_ID": "你的Telegram聊天ID",
+  "COOKIE_FILE": "/app/data/wechat_cookie.txt",  /* 必须与Docker Volume路径一致 */
+  "QR_IMAGE_PATH": "/app/data/wechat_qrcode.png", /* 必须与Docker Volume路径一致 */
+  "overwrite": true,                             /* 布尔值 */
+  "check_interval": 60,                          /* 正整数（秒） */
+  "telegram_proxy": None,                        /* 可选，None不代理TG */
+  "wechat_urls": [                               /* 非空列表 */
+    "https://work.weixin.qq.com/wework_admin/frame#/apps/modApiApp/5629501408695718"
+  ],
+  "ip_urls": [                                   /* 非空列表 */
+    "https://myip.ipip.net",
+    "https://ddns.oray.com/checkip",
+    "https://ip.3322.net",
+    "https://4.ipw.cn" 
+  ]
+}
