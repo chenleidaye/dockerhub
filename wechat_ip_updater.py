@@ -56,8 +56,7 @@ def send_telegram_message(text, notification_type="info"):
     """发送美观的Telegram通知"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     proxies = {"http": telegram_proxy, "https": telegram_proxy} if telegram_proxy else None
-    
-    # 根据通知类型设置表情符号
+
     emojis = {
         "success": "✅",
         "error": "❌",
@@ -67,8 +66,7 @@ def send_telegram_message(text, notification_type="info"):
         "ip": "🌐",
         "qr": "📲"
     }
-    
-    # 创建美观的Markdown消息
+
     header = {
         "success": f"{emojis['success']} *操作成功* {emojis['success']}",
         "error": f"{emojis['error']} *发生错误* {emojis['error']}",
@@ -78,31 +76,31 @@ def send_telegram_message(text, notification_type="info"):
         "ip": f"{emojis['ip']} *IP地址更新* {emojis['ip']}",
         "qr": f"{emojis['qr']} *登录二维码* {emojis['qr']}"
     }
-    
-    # 格式化消息内容
-shanghai_tz = pytz.timezone('Asia/Shanghai')
-now = datetime.now(shanghai_tz).strftime('%Y-%m-%d %H:%M:%S')
 
-formatted_text = (
-    f"{header.get(notification_type, header['info'])}\n"
-    f"══════════════════════════\n"
-    f"{text}\n"
-    f"══════════════════════════\n"
-    f"_🕒 {now}_"
-)
+    shanghai_tz = pytz.timezone('Asia/Shanghai')
+    now = datetime.now(shanghai_tz).strftime('%Y-%m-%d %H:%M:%S')
 
-payload = {
-    "chat_id": CHAT_ID, 
-    "text": formatted_text, 
-    "parse_mode": "Markdown"
-}
+    formatted_text = (
+        f"{header.get(notification_type, header['info'])}\n"
+        f"══════════════════════════\n"
+        f"{text}\n"
+        f"══════════════════════════\n"
+        f"_🕒 {now}_"
+    )
 
-try:
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": formatted_text,
+        "parse_mode": "Markdown"
+    }
+
+    try:
         response = requests.post(url, json=payload, proxies=proxies, timeout=10)
         return response.status_code == 200
     except Exception as e:
         print(f"[X] Telegram消息发送失败: {e}")
         return False
+
 
 def send_telegram_image(image_path, caption=""):
     """发送图片到Telegram"""
