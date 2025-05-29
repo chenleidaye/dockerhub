@@ -12,21 +12,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Chrome（稳定最新）
+# 安装 Chrome 浏览器（固定为 114 版本，稳定不变）
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && apt-get install -y --no-install-recommends google-chrome-stable=114.0.5735.91-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 ChromeDriver（直接匹配 chrome-stable 对应版本）
-RUN CHROME_VERSION=$(apt-cache policy google-chrome-stable | grep Installed | awk '{print $2}' | cut -d '-' -f1) \
-    && echo "Using Chrome version: $CHROME_VERSION" \
-    && DRIVER_URL=$(wget -qO- https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | \
-        jq -r --arg ver "$CHROME_VERSION" '.channels.Stable.downloads.chromedriver[] | select(.platform=="linux64") | .url') \
-    && wget -q "$DRIVER_URL" -O chromedriver.zip \
+# 安装对应版本的 ChromeDriver（114）
+RUN CHROMEDRIVER_VERSION=114.0.5735.90 \
+    && wget -q "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O chromedriver.zip \
     && unzip chromedriver.zip -d /usr/local/bin/ \
-    && rm chromedriver.zip \
+    && mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver \
+    && rm -rf chromedriver.zip /usr/local/bin/chromedriver-linux64 \
     && chmod +x /usr/local/bin/chromedriver
 
 # 安装 Python 依赖
