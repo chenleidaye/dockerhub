@@ -33,6 +33,7 @@ ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
 
 overwrite = os.getenv("OVERWRITE", "true").lower() == "true"
 check_interval = int(os.getenv("CHECK_INTERVAL", "60"))
+driver = None
 current_ip_address = "0.0.0.0"
 telegram_proxy = os.getenv("TELEGRAM_PROXY", None)
 # =================================================
@@ -350,12 +351,14 @@ def job():
     
     if new_ip != current_ip_address:
         print(f"[INFO] 公网 IP 发生变化：{current_ip_address} → {new_ip}")
-        driver = driver or init_driver()
+        if not driver:
+            driver = init_driver()
         update_all_apps_ip(driver, new_ip)
         current_ip_address = new_ip
     else:
         print(f"[INFO] 公网 IP 无变化，仍为：{new_ip}，刷新页面保持登录")
-        driver = driver or init_driver()
+        if not driver:
+            driver = init_driver()
         keep_session_alive(driver)
         
 def keep_session_alive(driver):
@@ -366,11 +369,10 @@ def keep_session_alive(driver):
         print(f"[X] 刷新页面失败: {e}")
         
 def main_loop():
+    global driver, current_ip_address
     schedule.every(3).minutes.do(job)
     print("[INFO] 企业微信 IP 自动更新服务已启动，定时任务每 3 分钟执行一次")
 
-    
-    driver = None
     last_ip_check = time.time() - check_interval  # 强制第一次检查
     
     print("====== 企业微信可信IP自动更新程序 ======")
@@ -385,48 +387,14 @@ def main_loop():
     while True:
         try:
             current_time = time.time()
-            
-            # 检查是否到达检查时间
             if current_time - last_ip_check < check_interval:
                 sleep_time = check_interval - (current_time - last_ip_check)
                 print(f"[*] 下次检查在 {int(sleep_time//60)} 分 {int(sleep_time%60)} 秒后...")
                 time.sleep(min(sleep_time, 60))
                 continue
-                
             last_ip_check = current_time
             
-            # 获取当前公网IP
-            new_ip = get_current_ip()
-            if not new_ip:
-                send_telegram_message("无法获取公网IP地址，请检查网络连接或IP服务状态", "warning")
-                time.sleep(60)
-                continue
-            
-            # 检测IP变化
-            if new_ip != current_ip_address:
-                print(f"[!] 检测到IP变化: {current_ip_address} -> {new_ip}")
-                send_telegram_message(f"检测到IP地址变化:\n`{current_ip_address}` → `{new_ip}`", "ip")
-                
-                # 初始化浏览器
-                if not driver:
-                    driver = init_driver()
-                    if not driver:
-                        print("[X] 浏览器初始化失败，等待下次尝试")
-                        time.sleep(60)
-                        continue
-                
-                # 更新所有应用的IP
-                updated = update_all_apps_ip(driver, new_ip)
-                if updated > 0:
-                    current_ip_address = new_ip
-                    print(f"[√] IP更新完成")
-                else:
-                    print("[X] IP更新失败")
-            else:
-                print(f"[=] IP未变化 ({new_ip})")
-                # 每12小时发送一次心跳
-                if current_time % (12 * 3600) < 60:
-                    send_telegram_message(f"系统运行正常\n当前IP: `{new_ip}`\n下次检查: <{time.strftime('%H:%M', time.localtime(current_time + check_interval))}>", "info")
+            job()  # 调用job，统一处理IP更新
             
         except KeyboardInterrupt:
             print("\n[!] 程序被用户中断")
@@ -437,8 +405,6 @@ def main_loop():
         except Exception as e:
             print(f"[X] 主循环异常: {e}")
             send_telegram_message(f"主循环发生异常:\n```\n{str(e)}\n```\n程序将在60秒后重试", "error")
-            
-            # 重置浏览器实例
             if driver:
                 driver.quit()
                 driver = None
