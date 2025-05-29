@@ -3,6 +3,8 @@ import time
 import os
 import requests
 import schedule
+import pytz
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -78,13 +80,16 @@ def send_telegram_message(text, notification_type="info"):
     }
     
     # 格式化消息内容
-    formatted_text = (
-        f"{header.get(notification_type, header['info'])}\n"
-        f"══════════════════════════\n"
-        f"{text}\n"
-        f"══════════════════════════\n"
-        f"_🕒 {time.strftime('%Y-%m-%d %H:%M:%S')}_"
-    )
+shanghai_tz = pytz.timezone('Asia/Shanghai')
+now = datetime.now(shanghai_tz).strftime('%Y-%m-%d %H:%M:%S')
+
+formatted_text = (
+    f"{header.get(notification_type, header['info'])}\n"
+    f"══════════════════════════\n"
+    f"{text}\n"
+    f"══════════════════════════\n"
+    f"_🕒 {now}_"
+)
     
     payload = {
         "chat_id": CHAT_ID, 
