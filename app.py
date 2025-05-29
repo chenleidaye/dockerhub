@@ -9,8 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # ==================== 配置区域 ====================
-BOT_TOKEN = ""
-CHAT_ID = ""
+BOT_TOKEN = "7970091013:AAFQAkzIXioVlh0bqNxBFD_DSRvZ27INa90"
+CHAT_ID = "5113786725"
 COOKIE_FILE = "wechat_cookie.txt"  # Cookie保存文件
 QR_IMAGE_PATH = 'wechat_qrcode.png'  # 二维码保存路径
 
@@ -28,7 +28,7 @@ wechat_urls = [
 ]
 
 overwrite = True  # True=覆盖模式，False=追加模式
-check_interval = 1800  # 检查间隔（秒）
+check_interval = 60  # 检查间隔（秒）
 current_ip_address = "0.0.0.0"  # 当前IP地址
 
 telegram_proxy = None  # Telegram代理，例如 "http://127.0.0.1:10808"
@@ -140,7 +140,6 @@ def capture_wechat_qrcode(driver):
         driver.get(url)
         print("[*] 打开企业微信登录页，等待二维码显示...")
         
-        # 修复这里：添加缺失的右括号
         # 等待二维码加载：等待iframe出现
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '#wx_reg iframe')))
@@ -149,13 +148,17 @@ def capture_wechat_qrcode(driver):
         iframe = driver.find_element(By.CSS_SELECTOR, '#wx_reg iframe')
         driver.switch_to.frame(iframe)
         
-        # 获取 iframe 内的 img 标签（二维码）
-        # 这里也需要添加等待
+        # 添加等待，确保二维码已渲染完成
         qrcode_element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'img')))
+        
+        # 等待二维码的实际显示，增加合理的时间
+        time.sleep(2)  # 这里可以根据实际情况稍作调整
+        
+        # 获取 QR 码并截图
         qrcode_element.screenshot(QR_IMAGE_PATH)
         print(f"[+] 二维码已截图保存为 {QR_IMAGE_PATH}")
-        
+
         driver.switch_to.default_content()  # 切回主页面
         
         # 发送二维码到Telegram
@@ -183,38 +186,48 @@ def capture_wechat_qrcode(driver):
         return False
 
 def handle_login(driver):
-    """处理登录流程并保存新Cookie"""
-    try:
+    """处理登录流程并保存新Cookie，支持二维码失效重试"""
+    max_retries = 3  # 最多重试3次二维码
+    attempt = 0
+
+    while True:
+        attempt += 1
+        print(f"[*] 正在进行第 {attempt} 次二维码登录尝试...")
+        
         # 获取并发送二维码
         if not capture_wechat_qrcode(driver):
+            continue  # 获取二维码失败，尝试下一轮
+
+        try:
+            # 等待扫码登录
+            print("[*] 等待扫码登录...")
+            WebDriverWait(driver, 300).until(
+                EC.url_contains("wework_admin/frame")
+            )
+            print("[√] 登录成功")
+            
+            # 保存新Cookie
+            cookies = driver.get_cookies()
+            cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+            save_cookie(cookie_str)
+            print(f"[√] Cookie已保存到 {COOKIE_FILE}")
+
+            send_telegram_message("企业微信登录成功！Cookie已保存，后续将自动使用保存的Cookie", "success")
+            return driver
+
+        except TimeoutException:
+            print("[X] 登录超时，二维码已过期")
+            send_telegram_message("登录超时，二维码已过期，正在尝试重新生成二维码", "warning")
+            continue  # 再尝试一次新的二维码
+
+        except Exception as e:
+            print(f"[X] 登录处理失败: {e}")
+            send_telegram_message(f"登录处理失败: {str(e)}", "error")
             return None
-        
-        # 等待登录成功
-        print("[*] 等待扫码登录...")
-        WebDriverWait(driver, 300).until(
-            EC.url_contains("wework_admin/frame")
-        )
-        print("[√] 登录成功")
-        
-        # 保存新Cookie
-        cookies = driver.get_cookies()
-        cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-        save_cookie(cookie_str)
-        print(f"[√] Cookie已保存到 {COOKIE_FILE}")
-        
-        # 发送登录成功通知
-        send_telegram_message("企业微信登录成功！Cookie已保存，后续将自动使用保存的Cookie", "success")
-        
-        return driver
-        
-    except TimeoutException:
-        print("[X] 登录超时，二维码已过期")
-        send_telegram_message("登录超时，二维码已过期，请重新启动程序获取新二维码", "error")
-        return None
-    except Exception as e:
-        print(f"[X] 登录处理失败: {e}")
-        send_telegram_message(f"登录处理失败: {str(e)}", "error")
-        return None
+
+    send_telegram_message("连续多次扫码失败，请检查网络或手动扫码登录", "error")
+    return None
+
 
 def init_driver():
     """初始化浏览器并处理登录状态"""
@@ -223,7 +236,11 @@ def init_driver():
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--window-size=1920,1080')
-    
+    options.add_argument('--incognito')  # 无痕浏览
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--headless=new')  # Chrome 117+推荐用 --headless=new
+
     driver = webdriver.Chrome(options=options)
     
     # 尝试使用保存的Cookie
@@ -405,4 +422,4 @@ if __name__ == '__main__':
         main_loop()
     except Exception as e:
         print(f"[X] 程序崩溃: {e}")
-        send_telegram_message(f"程序发生崩溃:\n```\n{str(e)}\n```\n请检查系统状态"， "error")
+        send_telegram_message(f"程序发生崩溃:\n```\n{str(e)}\n```\n请检查系统状态", "error")
