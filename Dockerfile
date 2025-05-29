@@ -1,19 +1,16 @@
-# 使用 Python 3.10 基础镜像（建议选择轻量级版本）
 FROM python:3.10-slim
-
-# 设置工作目录
 WORKDIR /app
 
-# 复制依赖文件（如果有单独的 requirements.txt）
-# COPY requirements.txt .
- COPY config.json .
- 
-# 安装依赖前校验配置（可选，避免无效镜像）
+# 先复制所有必要文件
+COPY config.json .
+COPY app.py .  # 提前复制 app.py，确保后续步骤能找到
+
+# 安装依赖前校验配置
 RUN python -c "import json, os; \
     if not os.path.exists('config.json'): raise FileNotFoundError('config.json 缺失'); \
     with open('config.json', 'r') as f: json.load(f);"
 
-# 安装依赖（直接在 Dockerfile 中指定，避免额外文件）
+# 安装依赖
 RUN pip install --no-cache-dir \
     selenium==4.10.0 \
     requests==2.31.0 \
