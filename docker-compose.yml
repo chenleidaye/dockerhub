@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  wechat-ip-updater:
+    build: .
+    container_name: wechat-ip-updater
+    restart: always
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - CHAT_ID=${CHAT_ID}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-300}
+      - OVERWRITE=${OVERWRITE:-true}
+      - TELEGRAM_PROXY=${TELEGRAM_PROXY}
+      - APP_IDS=${APP_IDS:-123456789,23456789}  # 设置默认应用ID
+    volumes:
+      - ./wechat_cookie.txt:/app/wechat_cookie.txt
+      - ./wechat_qrcode.png:/app/wechat_qrcode.png    
