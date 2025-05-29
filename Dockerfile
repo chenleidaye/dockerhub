@@ -1,50 +1,43 @@
-# 使用带有 Chrome 的 Python 基础镜像
-FROM python:3.9-slim
-
-# 设置时区
-ENV TZ=Asia/Shanghai
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-# 安装必要的依赖和 Chrome
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    unzip \
-    fonts-wqy-microhei \
-    --no-install-recommends
-
-# 安装 Google Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable
-
-# 安装 Chromedriver (匹配 Chrome 版本)
-RUN CHROME_VERSION=$(google-chrome --version | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+') \
-    && CHROME_MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d'.' -f1) \
-    && CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION) \
-    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip -d /usr/bin/ \
-    && chmod +x /usr/bin/chromedriver \
-    && rm /tmp/chromedriver.zip
+# 使用Python 3.9作为基础镜像
+FROM python:3.9-slim-buster
 
 # 设置工作目录
 WORKDIR /app
 
-# 复制代码和依赖文件
-COPY . .
+# 安装必要的系统依赖
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    gnupg2 \
+    && rm -rf /var/lib/apt/lists/*
 
-# 安装 Python 依赖
+# 安装Chrome浏览器
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装Chrome驱动
+RUN CHROME_VERSION=$(google-chrome-stable --version | grep -oP 'Google Chrome \K\d+') \
+    && CHROMEDRIVER_VERSION=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION") \
+    && wget -q "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip" \
+    && unzip chromedriver_linux64.zip -d /usr/local/bin/ \
+    && rm chromedriver_linux64.zip \
+    && chmod +x /usr/local/bin/chromedriver
+
+# 安装Python依赖
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 设置环境变量默认值
-ENV BOT_TOKEN=""
-ENV CHAT_ID=""
-ENV TELEGRAM_PROXY=""
-ENV CHECK_INTERVAL="60"
-ENV OVERWRITE="True"
-ENV IP_URLS=""
-ENV WECHAT_URLS=""
+# 复制应用代码
+COPY . .
 
-# 运行程序
-CMD ["python", "main.py"]
+# 设置环境变量
+ENV BOT_TOKEN=your_bot_token
+ENV CHAT_ID=your_chat_id
+ENV CHECK_INTERVAL=300
+ENV OVERWRITE=true
+ENV TELEGRAM_PROXY=
+
+# 运行应用
+CMD ["python", "app.py"]    
