@@ -58,4 +58,4 @@ ENV CHECK_INTERVAL=1800
 ENV OVERWRITE=True
 
 # 启动脚本
-CMD ["python", "your_script_name.py"]
+CMD ["python", "main.py"]
