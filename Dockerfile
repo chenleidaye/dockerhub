@@ -28,6 +28,8 @@ RUN CHROMEDRIVER_VERSION=137.0.7151.55 \
     && rm -rf chromedriver.zip /usr/local/bin/chromedriver-linux64 \
     && chmod +x /usr/local/bin/chromedriver
 
+RUN chmod +x /usr/local/bin/chromedriver
+
 
 # 安装 Python 依赖
 COPY requirements.txt .
