@@ -2,6 +2,7 @@ import re
 import time
 import os
 import requests
+import schedule
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -343,9 +344,31 @@ def update_all_apps_ip(driver, new_ip):
     return success_count
 
 
+def job():
+    global driver, current_ip_address
+    new_ip = get_current_ip()
+    
+    if new_ip != current_ip_address:
+        print(f"[INFO] 公网 IP 发生变化：{current_ip_address} → {new_ip}")
+        driver = driver or init_driver()
+        update_all_apps_ip(driver, new_ip)
+        current_ip_address = new_ip
+    else:
+        print(f"[INFO] 公网 IP 无变化，仍为：{new_ip}，刷新页面保持登录")
+        driver = driver or init_driver()
+        keep_session_alive(driver)
+        
+def keep_session_alive(driver):
+    try:
+        driver.get("https://work.weixin.qq.com/")
+        print("[√] 已刷新页面以保持会话活跃")
+    except Exception as e:
+        print(f"[X] 刷新页面失败: {e}")
+        
 def main_loop():
-    """主循环逻辑"""
-    global current_ip_address
+    schedule.every(3).minutes.do(job)
+    print("[INFO] 企业微信 IP 自动更新服务已启动，定时任务每 3 分钟执行一次")
+
     
     driver = None
     last_ip_check = time.time() - check_interval  # 强制第一次检查
