@@ -14,12 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-    google-chrome-stable=114.0.5735.91-1 \  # 显式指定版本
+    google-chrome-stable=114.0.5735.91-1 \
     && rm -rf /var/lib/apt/lists/* \
     && chmod +x /usr/bin/google-chrome-stable
 
 # 安装 ChromeDriver（使用国内镜像源，如阿里云）
-RUN CHROME_VERSION=114.0.5735.91 \  # 与 Chrome 版本一致
+RUN CHROME_VERSION=114.0.5735.91 \
     && CHROMEDRIVER_VERSION=$(wget -qO- https://cdn.npm.taobao.org/dist/chromedriver/LATEST_RELEASE_${CHROME_VERSION}) \
     && wget -q https://cdn.npm.taobao.org/dist/chromedriver/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip \
     -O chromedriver_linux64.zip \
